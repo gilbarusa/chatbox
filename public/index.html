@@ -319,18 +319,35 @@ const base = () => (cfg.serverUrl||'').replace(/\/$/,'');
 
 async function hfGet(path) {
   const r = await fetch(base()+'/api/hostfully'+path, {
-    headers:{ 'X-HOSTFULLY-APIKEY': cfg.hfKey, 'Accept':'application/json' }
+    headers:{
+      'X-HOSTFULLY-APIKEY': cfg.hfKey,
+      'X-HOSTFULLY-AGENCYUID': cfg.agencyUid,
+      'Accept':'application/json'
+    }
   });
-  if (!r.ok) throw new Error(r.status+' '+r.statusText);
+  if (!r.ok) {
+    let msg = r.status+' '+r.statusText;
+    try { const e = await r.json(); msg = e.message || e.error || msg; } catch{}
+    throw new Error(msg);
+  }
   return r.json();
 }
 async function hfPost(path, body) {
   const r = await fetch(base()+'/api/hostfully'+path, {
     method:'POST',
-    headers:{ 'X-HOSTFULLY-APIKEY':cfg.hfKey,'Content-Type':'application/json','Accept':'application/json' },
+    headers:{
+      'X-HOSTFULLY-APIKEY': cfg.hfKey,
+      'X-HOSTFULLY-AGENCYUID': cfg.agencyUid,
+      'Content-Type':'application/json',
+      'Accept':'application/json'
+    },
     body: JSON.stringify(body)
   });
-  if (!r.ok) throw new Error(r.status+' '+r.statusText);
+  if (!r.ok) {
+    let msg = r.status+' '+r.statusText;
+    try { const e = await r.json(); msg = e.message || e.error || msg; } catch{}
+    throw new Error(msg);
+  }
   return r.json();
 }
 async function claudeCall(payload) {
@@ -376,7 +393,8 @@ function showConnMsg(t) { document.getElementById('conn-msg').textContent = t; }
 
 // ── Threads ────────────────────────────────────────────────────────
 async function fetchThreads() {
-  const data = await hfGet('/threads?limit=25');
+  if (!cfg.agencyUid) throw new Error('Agency UID is required — add it in Settings');
+  const data = await hfGet('/threads?agencyUid='+cfg.agencyUid+'&limit=25');
   threads = data.content || data || [];
   renderThreads();
   document.getElementById('thread-count').textContent = threads.length+' conversation(s)';
