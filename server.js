@@ -16,7 +16,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── Hostfully proxy ──────────────────────────────────────────────
 // All requests to /api/hostfully/* are forwarded to Hostfully
 app.all('/api/hostfully/*', async (req, res) => {
-  const apiKey = req.headers['x-hostfully-apikey'] || process.env.HOSTFULLY_API_KEY;
+  const apiKey    = req.headers['x-hostfully-apikey'] || process.env.HOSTFULLY_API_KEY;
+  const agencyUid = req.headers['x-hostfully-agencyuid'] || process.env.HOSTFULLY_AGENCY_UID;
   if (!apiKey) return res.status(401).json({ error: 'Missing Hostfully API key' });
 
   const hfPath = req.path.replace('/api/hostfully', '');
@@ -27,7 +28,8 @@ app.all('/api/hostfully/*', async (req, res) => {
     const hfRes = await fetch(url, {
       method:  req.method,
       headers: {
-        'X-HOSTFULLY-APIKEY': apiKey,
+        'X-HOSTFULLY-APIKEY':    apiKey,
+        ...(agencyUid ? { 'X-HOSTFULLY-AGENCYUID': agencyUid } : {}),
         'Content-Type': 'application/json',
         'Accept':        'application/json',
       },
